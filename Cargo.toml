@@ -1,0 +1,11 @@
+[package]
+name = "vainfo-bis"
+version = "0.1.0"
+authors = ["Kurt Kartaltepe <kkartaltepe@gmail.com>"]
+
+[dependencies]
+error-chain="*"
+
+
+[build-dependencies]
+bindgen = "^0.26"

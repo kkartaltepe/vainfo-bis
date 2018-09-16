@@ -61,6 +61,7 @@ fn main() -> Result<()> {
         if p == VAProfileNone { return false };
         let mut num_entrypoints = unsafe { vaMaxNumEntrypoints(display) };
         // Added into enum as val 0
+        // Compiling yourself you will need to add this to the generated bindings
         let mut entrypoints = vec![VAEntrypointNone; num_entrypoints as usize];
         status = unsafe { vaQueryConfigEntrypoints(display,
                                                       p,

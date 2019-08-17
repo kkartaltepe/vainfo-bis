@@ -18,7 +18,6 @@ mod errors {
 use errors::*;
 use VAConfigAttribType::*;
 use VAEntrypoint::*;
-use VAProfile::*;
 use VASurfaceAttribType::*;
 
 use std::fs::OpenOptions;
@@ -55,25 +54,22 @@ fn main() -> Result<()> {
     }
 
     let mut num_profiles = unsafe { vaMaxNumProfiles(display) };
-    let mut profiles = vec![VAProfileNone; num_profiles as usize];
+    let mut profiles: Vec<VAProfile> = Vec::with_capacity(num_profiles as usize);
     status = unsafe { vaQueryConfigProfiles(display, profiles.as_mut_ptr(), &mut num_profiles) };
     if status != VA_STATUS_SUCCESS as i32 {
         bail!(format!("vaQueryConfigProfiles failed"));
     }
+    unsafe { profiles.set_len(num_profiles as usize); }
     profiles.retain(|&p| {
-        if p == VAProfileNone {
-            return false;
-        };
         let mut num_entrypoints = unsafe { vaMaxNumEntrypoints(display) };
-        // Added into enum as val 0
-        // Compiling yourself you will need to add this to the generated bindings
-        let mut entrypoints = vec![VAEntrypointNone; num_entrypoints as usize];
+        let mut entrypoints: Vec<VAEntrypoint> = Vec::with_capacity(num_entrypoints as usize);
         status = unsafe {
             vaQueryConfigEntrypoints(display, p, entrypoints.as_mut_ptr(), &mut num_entrypoints)
         };
         if status == VA_STATUS_ERROR_UNSUPPORTED_PROFILE as i32 {
             return false;
         }
+        unsafe { entrypoints.set_len(num_entrypoints as usize); }
         entrypoints.retain(|&e| e == VAEntrypointEncSlice || e == VAEntrypointEncSliceLP);
         if entrypoints.len() > 0 {
             println!("{:?}:", p);

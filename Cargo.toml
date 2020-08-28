@@ -8,4 +8,5 @@ error-chain="*"
 
 
 [build-dependencies]
-bindgen = "^0.26"
+bindgen = "~0.55"
+

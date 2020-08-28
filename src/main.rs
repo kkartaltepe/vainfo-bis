@@ -7,7 +7,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 extern crate error_chain;
 
 mod errors {
-    error_chain!{
+    error_chain! {
         foreign_links {
             Io(::std::io::Error);
             Str(::std::str::Utf8Error);
@@ -16,15 +16,11 @@ mod errors {
 }
 
 use errors::*;
-use VAConfigAttribType::*;
-use VAEntrypoint::*;
-use VASurfaceAttribType::*;
-
 use std::fs::OpenOptions;
 use std::os::unix::io::AsRawFd;
 
-fn fourcc<'a>(code: &'a u64) -> Result<&'a str> {
-    let arr = unsafe { std::mem::transmute::<&u64, &[u8; 8]>(code) };
+fn fourcc<'a>(code: &'a u32) -> Result<&'a str> {
+    let arr = unsafe { std::mem::transmute::<&u32, &[u8; 8]>(code) };
     let lower = &arr[0..4];
     return Ok(std::str::from_utf8(lower)?);
 }
@@ -59,7 +55,9 @@ fn main() -> Result<()> {
     if status != VA_STATUS_SUCCESS as i32 {
         bail!(format!("vaQueryConfigProfiles failed"));
     }
-    unsafe { profiles.set_len(num_profiles as usize); }
+    unsafe {
+        profiles.set_len(num_profiles as usize);
+    }
     profiles.retain(|&p| {
         let mut num_entrypoints = unsafe { vaMaxNumEntrypoints(display) };
         let mut entrypoints: Vec<VAEntrypoint> = Vec::with_capacity(num_entrypoints as usize);
@@ -69,8 +67,12 @@ fn main() -> Result<()> {
         if status == VA_STATUS_ERROR_UNSUPPORTED_PROFILE as i32 {
             return false;
         }
-        unsafe { entrypoints.set_len(num_entrypoints as usize); }
-        entrypoints.retain(|&e| e == VAEntrypointEncSlice || e == VAEntrypointEncSliceLP);
+        unsafe {
+            entrypoints.set_len(num_entrypoints as usize);
+        }
+        entrypoints.retain(|&e| {
+            e == VAEntrypoint_VAEntrypointEncSlice || e == VAEntrypoint_VAEntrypointEncSliceLP
+        });
         if entrypoints.len() > 0 {
             println!("{:?}:", p);
         }
@@ -78,31 +80,31 @@ fn main() -> Result<()> {
         for e in entrypoints.iter() {
             let mut attrib_list = vec![
                 VAConfigAttrib {
-                    type_: VAConfigAttribEncMaxRefFrames,
+                    type_: VAConfigAttribType_VAConfigAttribEncMaxRefFrames,
                     value: VA_ATTRIB_NOT_SUPPORTED,
                 },
                 VAConfigAttrib {
-                    type_: VAConfigAttribMaxPictureWidth,
+                    type_: VAConfigAttribType_VAConfigAttribMaxPictureWidth,
                     value: VA_ATTRIB_NOT_SUPPORTED,
                 },
                 VAConfigAttrib {
-                    type_: VAConfigAttribMaxPictureHeight,
+                    type_: VAConfigAttribType_VAConfigAttribMaxPictureHeight,
                     value: VA_ATTRIB_NOT_SUPPORTED,
                 },
                 VAConfigAttrib {
-                    type_: VAConfigAttribEncQualityRange,
+                    type_: VAConfigAttribType_VAConfigAttribEncQualityRange,
                     value: VA_ATTRIB_NOT_SUPPORTED,
                 },
                 VAConfigAttrib {
-                    type_: VAConfigAttribEncPackedHeaders,
+                    type_: VAConfigAttribType_VAConfigAttribEncPackedHeaders,
                     value: VA_ATTRIB_NOT_SUPPORTED,
                 },
                 VAConfigAttrib {
-                    type_: VAConfigAttribEncQuantization,
+                    type_: VAConfigAttribType_VAConfigAttribEncQuantization,
                     value: VA_ATTRIB_NOT_SUPPORTED,
                 },
                 VAConfigAttrib {
-                    type_: VAConfigAttribEncMacroblockInfo,
+                    type_: VAConfigAttribType_VAConfigAttribEncMacroblockInfo,
                     value: VA_ATTRIB_NOT_SUPPORTED,
                 },
             ];
@@ -153,10 +155,11 @@ fn main() -> Result<()> {
                 return false;
             }
             println!("\t{:?}:", e);
-            surf_attribs.retain(|attrib| return attrib.type_ != VASurfaceAttribNone);
+            surf_attribs
+                .retain(|attrib| return attrib.type_ != VASurfaceAttribType_VASurfaceAttribNone);
             attrib_list.retain(|attrib| return attrib.value != VA_ATTRIB_NOT_SUPPORTED);
             for a in attrib_list.iter() {
-                if a.type_ == VAConfigAttribEncMaxRefFrames {
+                if a.type_ == VAConfigAttribType_VAConfigAttribEncMaxRefFrames {
                     println!(
                         "\t\t{:?}: P-Frames: {}, B-Frames: {}",
                         a.type_,
@@ -168,19 +171,13 @@ fn main() -> Result<()> {
                 }
             }
             for s in surf_attribs.iter() {
-                if s.type_ == VASurfaceAttribPixelFormat {
-                    println!(
-                        "\t\t{:?}:{:?}",
-                        s.type_,
-                        fourcc(&s.value.value.bindgen_union_field)
-                    );
-                } else if s.type_ == VASurfaceAttribMemoryType {
-                    println!(
-                        "\t\t{:?}:0b{:b}",
-                        s.type_, s.value.value.bindgen_union_field as u32
-                    );
+                let val = unsafe { s.value.value.i as u32 };
+                if s.type_ == VASurfaceAttribType_VASurfaceAttribPixelFormat {
+                    println!("\t\t{:?}:{:?}", s.type_, fourcc(&val));
+                } else if s.type_ == VASurfaceAttribType_VASurfaceAttribMemoryType {
+                    println!("\t\t{:?}:0b{:b}", s.type_, val);
                 } else {
-                    println!("\t\t{:?}:{:?}", s.type_, s.value.value.bindgen_union_field);
+                    println!("\t\t{:?}:{:?}", s.type_, val);
                 }
             }
         }

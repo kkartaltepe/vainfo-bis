@@ -25,6 +25,12 @@ fn fourcc<'a>(code: &'a u32) -> Result<&'a str> {
     return Ok(std::str::from_utf8(lower)?);
 }
 
+fn extract_memtype(i:u32) -> Vec<u32> {
+    let mut list = vec![ VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2 ];
+    list.retain(|e| i & e != 0);
+    return list;
+}
+
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
@@ -173,7 +179,11 @@ fn main() -> Result<()> {
                 if s.type_ == VASurfaceAttribPixelFormat {
                     println!("\t\t{}:{:?}", name, fourcc(&(val as u32)));
                 } else if s.type_ == VASurfaceAttribMemoryType {
-                    println!("\t\t{}:0b{:b}", name, val);
+                    let val_names = extract_memtype(val as u32)
+                        .iter()
+                        .map(|&e| enum_str(VASURFACEATTRIB_MEMTYPE_STR, e))
+                        .collect::<Vec<Cow<str>>>();
+                    println!("\t\t{}:0b{:b}:{:?}", name, val, val_names);
                 } else {
                     println!("\t\t{}:{:?}", name, val);
                 }
@@ -291,6 +301,12 @@ static VACONFIGATTRIB_STR: &'static [(u32, &'static str)] = &[
     et!(VAConfigAttribQPBlockSize),
     et!(VAConfigAttribMaxFrameSize),
     et!(VAConfigAttribTypeMax),
+];
+
+static VASURFACEATTRIB_MEMTYPE_STR: &'static [(u32, &'static str)] = &[
+et!(VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM),
+et!(VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME),
+et!(VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2),
 ];
 
 use std::borrow::Cow;

@@ -20,15 +20,16 @@ fn main() {
                     .header("/usr/include/va/va.h")
                     .header("/usr/include/va/va_drm.h")
                     .header("/usr/include/va/va_drmcommon.h")
+                    .prepend_enum_name(false)
                     .generate()
                     .expect("Unable to generate bindings");
 
                 bindings
                     .write_to_file(&bindings_file)
                     .expect("Couldnt write bindings!");
-            },
-            _ => {},
+            }
+            _ => {}
         },
-        None => {},
+        None => {}
     }
 }
